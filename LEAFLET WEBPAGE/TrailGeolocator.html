@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Trail Geolocator</title>
+    
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="css/leaflet.css" />
+        <link rel="stylesheet" href="css/MarkerCluster.css" />
+        <link rel="stylesheet" href="css/MarkerCluster.Default.css" />
+        <link rel="stylesheet" type="text/css" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/label.css" />
+        <link rel="stylesheet" href="css/leaflet.draw.css" />
+        <link rel="stylesheet" href="css/leaflet.measurecontrol.css" />
+        <script src="js/leaflet.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/label.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/leaflet.markercluster.js"></script>
+        <script src="js/leaflet.draw.js"></script>
+        <script src="js/leaflet.measurecontrol.js"></script>
+        <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+  
+        <!-- added 6 --> 
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+		<link rel="stylesheet" href="maps/leaflet/dist/leaflet.css" />
+		<link rel="stylesheet" href="src/leaflet-gps.css" />
+		<link rel="stylesheet" href="style.css" />
+        <script type="text/javascript" src="dist/leaflet-control-credits.js"></script>
+        <link rel="stylesheet" href="dist/leaflet-control-credits.css" />     
+        
+    </head>
+    <body>
+        <div id="map"></div>
+        
+        <!-- added 2 -->        
+		<script src="maps/leaflet/dist/leaflet.js"></script>
+		<script src="src/leaflet-gps.js"></script> 
+        
+        <script src="data/json_IMBARatings.js"></script>
+        <script src="data/json_TrailInfo.js"></script>
+        <script src="data/json_IntersectionData.js"></script>
+        <script>
+        var map = L.map('map', {
+            measureControl:true,
+            zoomControl:true, maxZoom:28, minZoom:1
+        }).fitBounds([[44.926856, -68.674748],[44.904076, -68.642998]]);
+        var hash = new L.Hash(map);
+        var additional_attrib = '';
+        var feature_group = new L.featureGroup([]);
+        var bounds_group = new L.featureGroup([]);
+        var raster_group = new L.LayerGroup([]);
+        var basemap = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: additional_attrib + ' &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors,<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+            maxZoom: 28
+        });
+        basemap.addTo(map);
+        var layerOrder = new Array();
+        function stackLayers() {
+            for (index = 0; index < layerOrder.length; index++) {
+                map.removeLayer(layerOrder[index]);
+                map.addLayer(layerOrder[index]);
+            }
+        }
+        function restackLayers() {
+            for (index = 0; index < layerOrder.length; index++) {
+                layerOrder[index].bringToFront();
+            }
+        }
+
+        map.on('overlayadd', restackLayers);
+        layerControl = L.control.layers({},{},{collapsed:false});
+        
+        <!-- imbaRating STUFF -->        
+        <!-- Add and delete prop table items here!!  this is empty already-->        
+        function pop_IMBARatings(feature, layer) {
+        }
+        <!-- styling function for imbaRatings -->
+        function doStyleIMBARatings(feature) {
+			switch (feature.properties.IMBArating) {
+                default:
+                    return {
+                    color: '#ffffff',
+                    weight: '0.0',
+                    dashArray: '',
+                    opacity: '0.8',
+                };
+                break;
+
+                case '1':
+                    return {
+                    color: '#33a02c',
+                    weight: '4.64',
+                    dashArray: '',
+                    opacity: '0.8',
+                };
+                break;
+
+                case '2':
+                    return {
+                    color: '#3383e5',
+                    weight: '4.64',
+                    dashArray: '',
+                    opacity: '0.8',
+                };
+                break;
+
+                case '3':
+                    return {
+                    color: '#000000',
+                    weight: '4.64',
+                    dashArray: '',
+                    opacity: '0.8',
+                };
+                break;
+
+            }
+        }
+            var json_IMBARatingsJSON = new L.geoJson(json_IMBARatings, {
+                onEachFeature: pop_IMBARatings,
+                style: doStyleIMBARatings
+            });
+        layerOrder[layerOrder.length] = json_IMBARatingsJSON;
+        bounds_group.addLayer(json_IMBARatingsJSON);
+        feature_group.addLayer(json_IMBARatingsJSON);
+        
+        <!-- trailInfo STUFF -->        
+        <!-- Add and delete prop table items here!! -->  
+        function pop_TrailInfo(feature, layer) {
+            var popupContent = '<h2>Trail Info</h2><table></td></tr><tr><th scope="row">Trail Name</th><td>' + Autolinker.link(String(feature.properties['name'])) + '</td></tr><tr><th scope="row">Trail Type</th><td>' + Autolinker.link(String(feature.properties['trail_type'])) + '</td></tr><tr><th scope="row">Trail Length <br/>(Meters)</th><td>' + Autolinker.link(String(feature.properties['trail_leng'])) + '</td></tr><tr><th scope="row">IMBA Rating <br/> (0-4)</th><td>' + Autolinker.link(String(feature.properties['IMBA_ratin'])) + '</td></tr><tr><th scope="row">IMBA #1<br/>Trail Width</th><td>' + Autolinker.link(String(feature.properties['trail_widt'])) + '</td></tr><tr><th scope="row">IMBA #2<br/>Tread Surface</th><td>' + Autolinker.link(String(feature.properties['tread_surf'])) + '</td></tr><tr><th scope="row">IMBA #3<br/>Avg Grade</th><td>' + Autolinker.link(String(feature.properties['avg_grade'])) + '</td></tr><tr><th scope="row">IMBA #4<br/>Max Grade</th><td>' + Autolinker.link(String(feature.properties['max_grade'])) + '</td></tr><tr><th scope="row">IMBA #5<br/>Tech Trail Features</th><td>' + Autolinker.link(String(feature.properties['ttf'])) + '</td></tr><tr><th scope="row">Details</th><td>' + Autolinker.link(String(feature.properties['details'])) + '</td></tr><tr><th scope="row">Management</th><td>' + Autolinker.link(String(feature.properties['management'])) + '</td></tr><tr><th scope="row">Trail System Name</th><td>' + Autolinker.link(String(feature.properties['trail_syst'])) + '</td></tr><tr><th scope="row">Town</th><td>' + Autolinker.link(String(feature.properties['town'])) + '</td></tr><tr><th scope="row">State</th><td>' + Autolinker.link(String(feature.properties['state'])) + '</td></tr><tr><th scope="row">Pets</th><td>' + Autolinker.link(String(feature.properties['pets'])) + '</td></tr></table>';
+            layer.bindPopup(popupContent);
+        }
+        <!-- styling function for trailInfo -->
+        function doStyleTrailInfo(feature) {
+			switch (feature.properties.highway) {
+                case 'service':
+                    return {
+                    color: '#878787',
+                    weight: '6.24',
+                    dashArray: '',
+                    opacity: '0.7',
+                };
+                break;
+
+                case 'cycleway':
+                    return {
+                    color: '#eed510',
+                    weight: '6.24',
+                    dashArray: '',
+                    opacity: '0.7',
+                };
+                break;
+
+                case 'track':
+                    return {
+                    color: '#a67400',
+                    weight: '5.44',
+                    dashArray: '',
+                    opacity: '0.7',
+                };
+                break;
+
+                case 'footway':
+                    return {
+                    fillColor: '#000000',
+                    color: '#faad27',
+                    weight: '4.00',
+                    dashArray: '5, 1, 5',
+                    opacity: '0.8',
+                };
+                break;
+
+                case 'path':
+                    return {
+                    color: '#ffffff',
+                    weight: '2.5',
+                    dashArray: '10, 5',
+                    opacity: '1.0',
+                };
+                break;
+
+            }
+        }
+            var json_TrailInfoJSON = new L.geoJson(json_TrailInfo, {
+                onEachFeature: pop_TrailInfo,
+                style: doStyleTrailInfo
+            });
+        layerOrder[layerOrder.length] = json_TrailInfoJSON;
+        bounds_group.addLayer(json_TrailInfoJSON);
+        feature_group.addLayer(json_TrailInfoJSON);
+
+        <!-- intersectionData STUFF -->        
+        <!-- Add and delete prop table items here!! -->  
+        function pop_IntersectionData(feature, layer) {
+            var icon = String(feature.properties['image_hype']);
+            var popupContent = "<h2>Intersection Info</h2><img src=" + icon + ">" + '<table></td></tr><tr><th scope="row">Intersection ID</th><td>' + Autolinker.link(String(feature.properties['intersecti'])) + '</td></tr><tr><th scope="row">Management</th><td>' + Autolinker.link(String(feature.properties['management'])) + '</td></tr><tr><th scope="row">Tail System Name</th><td>' + Autolinker.link(String(feature.properties['trail_syst'])) + '</td></tr><tr><th scope="row">Town</th><td>' + Autolinker.link(String(feature.properties['town'])) + '</td></tr><tr><th scope="row">State</th><td>' + Autolinker.link(String(feature.properties['state'])) + '</td></tr><tr><th scope="row">Intersecting Trails</th><td>' + Autolinker.link(String(feature.properties['intersectT'])) + '</td></tr><tr><th scope="row">Image Hyperlink</th><td>' + Autolinker.link(String(feature.properties['image_hype'])) + '</td></tr></table>';
+            layer.bindPopup(popupContent);
+        }
+        <!-- styling function for intersectionData -->
+        function doStyleIntersectionData() {
+            return {
+                radius: 9.0,
+                fillColor: '#000000',
+                color: '#ffffff',
+                weight: 1.5,
+                opacity: 1.0,
+                dashArray: '',
+                fillOpacity: 0.8
+            }
+        }
+        function doPointToLayerIntersectionData(feature, latlng) {
+            return L.circleMarker(latlng, doStyleIntersectionData()).bindLabel(feature.properties.intersecti, {noHide: true, className: "leaflet-ville-label", offset: [-10, -13], color: '#000000'})
+        }
+        var json_IntersectionDataJSON = new L.geoJson(json_IntersectionData, {
+            onEachFeature: pop_IntersectionData, 
+            pointToLayer: doPointToLayerIntersectionData
+            });
+        layerOrder[layerOrder.length] = json_IntersectionDataJSON;
+
+        <!-- Title Group -->
+		feature_group.addTo(map);
+		var title = new L.Control();
+		title.onAdd = function (map) {
+			this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+			this.update();
+			return this._div;
+		};
+		title.update = function () {
+			this._div.innerHTML = '<h2>Trail Geolocator</h2>Enable GPS'
+		};
+		title.addTo(map);        
+        
+        <!-- LEGEND STUFF GROUP -->
+        bounds_group.addLayer(json_IntersectionDataJSON);
+        feature_group.addLayer(json_IntersectionDataJSON);
+        raster_group.addTo(map);
+        feature_group.addTo(map);
+        var baseMaps = {
+            'OSM Standard': basemap
+        };
+        <!-- Edit legend items here -->
+        L.control.layers(baseMaps,{'<img src="legend/IntersectionData.png" /> IntersectionData': json_IntersectionDataJSON,'TrailInfo<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="legend/TrailInfo_ServiceRoad.png" /> Service Road<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="legend/TrailInfo_PavedCycleway.png" /> Paved Cycleway<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="legend/TrailInfo_DirtRoad.png" /> Dirt Road<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="legend/TrailInfo_DirtFootway.png" /> Dirt Footway<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="legend/TrailInfo_Singletrack.png" /> Singletrack<br />': json_TrailInfoJSON,'IMBARatings<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="legend/IMBARatings_.png" /> <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="legend/IMBARatings_GreenCircle.png" /> Green Circle<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="legend/IMBARatings_BlueSquare.png" /> Blue Square<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="legend/IMBARatings_BlackDiamond.png" /> Black Diamond<br />': json_IMBARatingsJSON},{collapsed:true}).addTo(map);
+        
+        
+        L.control.scale({options: {position: 'bottomleft', maxWidth: 100, metric: true, imperial: false, updateWhenIdle: false}}).addTo(map);
+        map.addControl( new L.Control.Gps({autoActive:false}) );//inizialize control
+        stackLayers();
+        
+        <!-- Edit pdf items here -->
+        L.controlCredits({image: "./pdf.png", link: "./SIE509_BikeTrailsGEO.pdf", text: "Download Geo-PDF<br/>by Joel Whitney"}).addTo(map);            
+    </script>
+</body>
+</html>
